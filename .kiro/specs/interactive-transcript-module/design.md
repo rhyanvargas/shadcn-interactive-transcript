@@ -304,15 +304,28 @@ Following latest shadcn/ui registry patterns, the component will be distributed 
     "config": {
       "theme": {
         "extend": {
+          "colors": {
+            "transcript": {
+              "highlight": "oklch(0.95 0.1 60)",
+              "search-match": "oklch(0.85 0.15 45)",
+              "active": "oklch(var(--accent))",
+              "hover": "oklch(var(--accent) / 0.5)"
+            }
+          },
           "keyframes": {
             "transcript-highlight": {
               "0%": { "background-color": "oklch(var(--muted))" },
-              "50%": { "background-color": "oklch(var(--accent))" },
+              "50%": { "background-color": "oklch(var(--transcript-highlight))" },
               "100%": { "background-color": "oklch(var(--muted))" }
+            },
+            "transcript-search-pulse": {
+              "0%, 100%": { "opacity": "1" },
+              "50%": { "opacity": "0.7" }
             }
           },
           "animation": {
-            "transcript-highlight": "transcript-highlight 0.5s ease-in-out"
+            "transcript-highlight": "transcript-highlight 0.5s ease-in-out",
+            "transcript-search-pulse": "transcript-search-pulse 1s ease-in-out infinite"
           }
         }
       }
@@ -321,9 +334,29 @@ Following latest shadcn/ui registry patterns, the component will be distributed 
 }
 ```
 
-### Styling Strategy (Latest shadcn/ui + Tailwind CSS v4)
+### Styling Strategy (shadcn/ui + Tailwind CSS v4 Best Practices)
 
-Following latest shadcn/ui conventions with Tailwind CSS v4 and modern CSS:
+Following shadcn/ui theming conventions with Tailwind CSS v4 and proper CSS custom properties:
+
+#### Theme Integration
+
+All transcript-specific colors and styling should integrate with the existing shadcn/ui theme system. Custom colors should be added to the `@theme inline` directive in `globals.css`:
+
+```css
+@theme inline {
+  /* Existing theme variables... */
+  
+  /* Transcript Module Colors */
+  --color-transcript-highlight: oklch(0.95 0.1 60);
+  --color-transcript-search-match: oklch(0.85 0.15 45);
+  --color-transcript-active: var(--accent);
+  --color-transcript-hover: oklch(var(--accent) / 0.5);
+}
+```
+
+#### Component Variants
+
+Using class-variance-authority for component variants with proper theme integration:
 
 ```typescript
 // Using class-variance-authority for component variants
@@ -357,27 +390,70 @@ const segmentVariants = cva(
   {
     variants: {
       active: {
-        true: "bg-accent text-accent-foreground",
-        false: "hover:bg-accent/50 focus:bg-accent/50"
+        true: "bg-transcript-active text-accent-foreground",
+        false: "hover:bg-transcript-hover focus:bg-transcript-hover"
       },
       highlighted: {
-        true: "bg-yellow-50 text-yellow-900 dark:bg-yellow-950/50 dark:text-yellow-50",
+        true: "bg-transcript-highlight text-foreground",
+        false: ""
+      },
+      searchMatch: {
+        true: "bg-transcript-search-match text-foreground font-medium",
         false: ""
       }
     },
     defaultVariants: {
       active: false,
-      highlighted: false
+      highlighted: false,
+      searchMatch: false
     }
   }
 )
+```
 
-// Tailwind CSS v4 compatible custom properties
+#### Tailwind CSS v4 Theme Extension
+
+Custom animations and utilities should be added to the theme configuration:
+
+```css
+@theme inline {
+  /* Existing theme variables... */
+  
+  /* Transcript Module Animations */
+  --animate-transcript-highlight: transcript-highlight 0.5s ease-in-out;
+  --animate-transcript-search-pulse: transcript-search-pulse 1s ease-in-out infinite;
+}
+
+/* Custom keyframes for transcript animations */
+@keyframes transcript-highlight {
+  0% { background-color: oklch(var(--muted)); }
+  50% { background-color: oklch(var(--transcript-highlight)); }
+  100% { background-color: oklch(var(--muted)); }
+}
+
+@keyframes transcript-search-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+```
+
+#### CSS Custom Properties Best Practices
+
+Following shadcn/ui patterns, avoid inline CSS custom properties. Instead, use Tailwind's theme system:
+
+```typescript
+// ❌ Avoid inline CSS custom properties
 const transcriptStyles = {
   "--transcript-segment-padding": "0.75rem",
   "--transcript-highlight-duration": "0.5s",
-  "--transcript-search-highlight": "oklch(0.95 0.1 60)",
 } as React.CSSProperties
+
+// ✅ Use Tailwind theme classes
+const TranscriptSegment = ({ children, ...props }) => (
+  <div className="p-3 transition-colors duration-500 animate-transcript-highlight" {...props}>
+    {children}
+  </div>
+)
 ```
 
 ### Component Composition (Latest shadcn/ui Pattern)
@@ -440,6 +516,106 @@ export type { InteractiveTranscriptProps }
 4. **Lazy Loading**: Load WebVTT parsing utilities on demand
 5. **Bundle Splitting**: Separate search functionality for optional loading
 
+## Theming Best Practices
+
+### shadcn/ui Theme Integration
+
+The Interactive Transcript Module follows shadcn/ui theming conventions to ensure seamless integration with existing design systems:
+
+#### 1. CSS Custom Properties in globals.css
+
+All transcript-specific colors should be added to the `@theme inline` directive in `globals.css`, not as separate CSS variables:
+
+```css
+@theme inline {
+  /* Existing shadcn/ui theme variables... */
+  
+  /* Transcript Module Theme Colors */
+  --color-transcript-highlight: oklch(0.95 0.1 60);
+  --color-transcript-search-match: oklch(0.85 0.15 45);
+  --color-transcript-active: var(--accent);
+  --color-transcript-hover: oklch(var(--accent) / 0.5);
+}
+
+:root {
+  /* Existing root variables... */
+  
+  /* Transcript-specific variables */
+  --transcript-highlight: oklch(0.95 0.1 60);
+  --transcript-search-match: oklch(0.85 0.15 45);
+  --transcript-active: var(--accent);
+  --transcript-hover: oklch(var(--accent) / 0.5);
+}
+
+.dark {
+  /* Dark mode overrides */
+  --transcript-highlight: oklch(0.25 0.1 60);
+  --transcript-search-match: oklch(0.35 0.15 45);
+}
+```
+
+#### 2. Tailwind CSS v4 Color Integration
+
+Use Tailwind's color system rather than inline CSS custom properties:
+
+```typescript
+// ❌ Avoid this approach
+export const CSS_VARIABLES = {
+  '--transcript-segment-padding': '0.75rem',
+  '--transcript-highlight-duration': '0.5s',
+  '--transcript-search-highlight': 'oklch(0.95 0.1 60)',
+  '--transcript-active-bg': 'oklch(var(--accent))',
+  '--transcript-hover-bg': 'oklch(var(--accent) / 0.5)'
+} as const
+
+// ✅ Use Tailwind theme classes instead
+<div className="bg-transcript-highlight text-foreground p-3 transition-colors duration-500">
+  {content}
+</div>
+```
+
+#### 3. Component Variant Patterns
+
+Follow shadcn/ui component patterns with proper theme integration:
+
+```typescript
+import { cva } from "class-variance-authority"
+
+const transcriptSegmentVariants = cva(
+  // Base styles using theme colors
+  "relative flex cursor-pointer select-none items-start gap-2 rounded-md px-3 py-2 text-sm outline-none transition-colors",
+  {
+    variants: {
+      state: {
+        default: "hover:bg-accent/50 focus:bg-accent/50",
+        active: "bg-accent text-accent-foreground",
+        highlighted: "bg-transcript-highlight text-foreground",
+        searchMatch: "bg-transcript-search-match text-foreground font-medium"
+      }
+    },
+    defaultVariants: {
+      state: "default"
+    }
+  }
+)
+```
+
+#### 4. Dark Mode Support
+
+Ensure all transcript colors have proper dark mode variants defined in the `.dark` selector in `globals.css`:
+
+```css
+.dark {
+  /* Existing dark mode variables... */
+  
+  /* Transcript dark mode colors */
+  --transcript-highlight: oklch(0.25 0.1 60);
+  --transcript-search-match: oklch(0.35 0.15 45);
+  --transcript-active: var(--accent);
+  --transcript-hover: oklch(var(--accent) / 0.3);
+}
+```
+
 ### shadcn/ui Registry Integration
 
 The component will be distributed through the latest shadcn/ui registry system, allowing users to install it via:
@@ -455,6 +631,7 @@ This will:
 - Configure Tailwind CSS v4 with custom animations and OKLCH color space support
 - Provide comprehensive TypeScript definitions with proper exports and variants
 - Support `asChild` prop pattern for maximum composability
+- **Automatically update `globals.css`** with transcript-specific theme variables
 
 ### Component Dependencies
 

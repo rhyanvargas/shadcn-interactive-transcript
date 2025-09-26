@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Set up project structure and core utilities
+- [x] 1. Set up project structure and core utilities
   - Create TypeScript interfaces and types for transcript data, WebVTT integration, and component props
   - Implement utility functions for class name merging and component composition
   - Set up basic project structure following shadcn/ui patterns
@@ -97,53 +97,59 @@
     - _Requirements: 8.2, 8.3_
 
 - [ ] 8. Add comprehensive styling and theming
-  - [ ] 8.1 Implement component variants and styling
-    - Create class-variance-authority variants for size and appearance options
-    - Add Tailwind CSS classes following shadcn/ui design system
-    - Implement proper dark mode support with CSS variables
+  - [ ] 8.1 Update globals.css with transcript theme variables
+    - Add transcript-specific color variables to the `@theme inline` directive in globals.css
+    - Define proper light and dark mode color variants using OKLCH color space
+    - Remove any inline CSS custom properties from TypeScript constants files
     - _Requirements: 5.1, 5.2, 5.3_
 
-  - [ ] 8.2 Add custom CSS properties for fine-tuning
-    - Implement CSS custom properties for advanced customization
-    - Add Tailwind CSS v4 compatible animations and transitions
-    - Create theming examples and customization documentation
+  - [ ] 8.2 Implement component variants following shadcn/ui patterns
+    - Create class-variance-authority variants for size and appearance options
+    - Use Tailwind theme colors instead of inline CSS custom properties
+    - Add proper dark mode support using theme variables from globals.css
+    - _Requirements: 5.1, 5.2, 5.3_
+
+  - [ ] 8.3 Add Tailwind CSS v4 animations and transitions
+    - Define custom keyframes and animations in the `@theme inline` directive
+    - Implement transcript-specific animations (highlight, search pulse) using theme system
+    - Create smooth transitions for state changes using Tailwind classes
     - _Requirements: 5.4, 9.3_
 
-- [ ] 9. Create shadcn/ui registry configuration
-  - [ ] 9.1 Build registry JSON configuration
-    - Create registry configuration file with proper dependencies and file paths
-    - Add Tailwind CSS configuration for custom animations and keyframes
-    - Include all necessary shadcn/ui component dependencies
-    - _Requirements: 1.4, 1.5_
-
-  - [ ] 9.2 Set up component exports and file structure
-    - Organize components in proper shadcn/ui file structure
-    - Create comprehensive TypeScript exports with proper type definitions
-    - Add component documentation and JSDoc comments
-    - _Requirements: 6.1, 6.2, 9.1_
-
-- [ ] 10. Write comprehensive tests
-  - [ ] 10.1 Create unit tests for all utilities and components
+- [ ] 9. Write comprehensive tests
+  - [ ] 9.1 Create unit tests for all utilities and components
     - Write tests for WebVTT parsing, transformation, and media sync utilities
     - Add component tests for user interactions and rendering behavior
     - Create accessibility tests for keyboard navigation and screen readers
     - _Requirements: 6.1, 6.3_
 
-  - [ ] 10.2 Add integration tests with next-video
+  - [ ] 9.2 Add integration tests with next-video
     - Create integration tests demonstrating compatibility with next-video component
     - Test media synchronization and TextTrack API integration
     - Add performance tests for large transcript handling
     - _Requirements: 8.4, 7.1_
 
-- [ ] 11. Create documentation and examples
-  - [ ] 11.1 Write API documentation
+- [ ] 10. Create documentation and examples
+  - [ ] 10.1 Write API documentation
     - Create comprehensive component API documentation with TypeScript definitions
     - Add prop descriptions, usage examples, and customization guides
     - Document WebVTT transformation utilities and media integration patterns
     - _Requirements: 9.1, 9.4_
 
-  - [ ] 11.2 Build practical implementation examples
+  - [ ] 10.2 Build practical implementation examples
     - Create examples showing integration with next-video and other media components
     - Add theming and customization examples using shadcn/ui patterns
     - Build Next.js 15 specific implementation examples with app router
     - _Requirements: 9.2, 9.3, 9.4_
+
+- [ ] 11. Create shadcn/ui registry configuration (after local testing)
+  - [ ] 11.1 Build registry JSON configuration
+    - Create registry configuration file with proper dependencies and file paths
+    - Add Tailwind CSS configuration for custom animations and keyframes
+    - Include all necessary shadcn/ui component dependencies
+    - _Requirements: 1.4, 1.5_
+
+  - [ ] 11.2 Set up component exports and file structure for registry
+    - Organize components in proper shadcn/ui file structure for distribution
+    - Create comprehensive TypeScript exports with proper type definitions
+    - Add component documentation and JSDoc comments for registry
+    - _Requirements: 6.1, 6.2, 9.1_
