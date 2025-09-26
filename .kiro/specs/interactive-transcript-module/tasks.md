@@ -13,7 +13,7 @@
     - Create unit tests for WebVTT parsing with various input formats
     - _Requirements: 8.1, 8.3_
 
-  - [ ] 2.2 Implement text-to-WebVTT transformation utility
+  - [x] 2.2 Implement text-to-WebVTT transformation utility
     - Write transformation functions to convert raw text into WebVTT tracks and cues
     - Support configurable segment duration and speaker detection options
     - Create unit tests for text transformation with different configurations
