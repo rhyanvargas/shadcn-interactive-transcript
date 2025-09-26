@@ -7,7 +7,7 @@
   - _Requirements: 1.3, 6.1, 6.2_
 
 - [ ] 2. Implement WebVTT parsing and transformation utilities
-  - [ ] 2.1 Create WebVTT parser utility
+  - [x] 2.1 Create WebVTT parser utility
     - Write functions to parse WebVTT format strings into structured transcript data
     - Implement error handling for malformed WebVTT content
     - Create unit tests for WebVTT parsing with various input formats
