@@ -120,8 +120,18 @@ export interface TranscriptSegmentProps
   highlighted?: boolean
   /** Whether this segment matches current search query */
   searchMatch?: boolean
+  /** Whether this segment is currently hovered */
+  hovered?: boolean
+  /** Whether this segment is currently focused */
+  focused?: boolean
   /** Click handler with cue data */
-  onCueClick?: (cue: TranscriptCue) => void
+  onCueClick?: (cue: TranscriptCue, event: React.MouseEvent) => void
+  /** Double-click handler with cue data */
+  onCueDoubleClick?: (cue: TranscriptCue, event: React.MouseEvent) => void
+  /** Hover handler */
+  onCueHover?: (cue: TranscriptCue | null) => void
+  /** Focus handler */
+  onCueFocus?: (cue: TranscriptCue | null) => void
   /** Timestamp display configuration */
   timestampConfig?: {
     show?: boolean
@@ -137,6 +147,8 @@ export interface TranscriptSegmentProps
   }
   /** Search query for highlighting matches */
   searchQuery?: string
+  /** Enable enhanced interaction features */
+  enableInteractions?: boolean
   /** Render as child component */
   asChild?: boolean
 }
@@ -196,16 +208,27 @@ const TranscriptSegment = React.forwardRef<HTMLDivElement, TranscriptSegmentProp
     active = false,
     highlighted = false,
     searchMatch = false,
+    hovered = false,
+    focused = false,
     onCueClick,
+    onCueDoubleClick,
+    onCueHover,
+    onCueFocus,
     timestampConfig = {},
     speakerConfig = {},
     searchQuery,
     state,
     size,
     variant,
+    enableInteractions = true,
     asChild = false,
     onClick,
+    onDoubleClick,
     onKeyDown,
+    onMouseEnter,
+    onMouseLeave,
+    onFocus,
+    onBlur,
     ...props
   }, ref) => {
     // Determine component state based on props
@@ -225,17 +248,56 @@ const TranscriptSegment = React.forwardRef<HTMLDivElement, TranscriptSegmentProp
       format: formatSpeaker = defaultSpeakerFormatter
     } = speakerConfig
 
-    // Event handlers
+    // Enhanced event handlers with interaction support
     const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
       onClick?.(event)
-      onCueClick?.(cue)
+      if (enableInteractions && onCueClick) {
+        onCueClick(cue, event)
+      }
+    }
+
+    const handleDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+      onDoubleClick?.(event)
+      if (enableInteractions && onCueDoubleClick) {
+        onCueDoubleClick(cue, event)
+      }
+    }
+
+    const handleMouseEnter = (event: React.MouseEvent<HTMLDivElement>) => {
+      onMouseEnter?.(event)
+      if (enableInteractions && onCueHover) {
+        onCueHover(cue)
+      }
+    }
+
+    const handleMouseLeave = (event: React.MouseEvent<HTMLDivElement>) => {
+      onMouseLeave?.(event)
+      if (enableInteractions && onCueHover) {
+        onCueHover(null)
+      }
+    }
+
+    const handleFocus = (event: React.FocusEvent<HTMLDivElement>) => {
+      onFocus?.(event)
+      if (enableInteractions && onCueFocus) {
+        onCueFocus(cue)
+      }
+    }
+
+    const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+      onBlur?.(event)
+      if (enableInteractions && onCueFocus) {
+        onCueFocus(null)
+      }
     }
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
       onKeyDown?.(event)
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault()
-        onCueClick?.(cue)
+        if (enableInteractions && onCueClick) {
+          onCueClick(cue, event as any)
+        }
       }
     }
 
@@ -286,14 +348,22 @@ const TranscriptSegment = React.forwardRef<HTMLDivElement, TranscriptSegmentProp
         ref={ref}
         className={cn(transcriptSegmentVariants({ state: componentState, size, variant }), className)}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
         aria-label={`Transcript segment: ${cue.text}${cue.speaker ? ` by ${cue.speaker}` : ''} at ${formatTimestamp(cue.startTime)}`}
         aria-pressed={active}
+        aria-current={active ? 'true' : undefined}
         data-cue-id={cue.id}
         data-start-time={cue.startTime}
         data-end-time={cue.endTime}
+        data-hovered={hovered}
+        data-focused={focused}
         {...props}
       >
         {timestampPosition === "top" && (
