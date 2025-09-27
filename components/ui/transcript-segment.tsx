@@ -111,7 +111,7 @@ const speakerVariants = cva(
  */
 export interface TranscriptSegmentProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof transcriptSegmentVariants> {
+  VariantProps<typeof transcriptSegmentVariants> {
   /** Transcript cue data */
   cue: TranscriptCue
   /** Whether this segment is currently active/playing */
@@ -371,15 +371,15 @@ const TranscriptSegment = React.forwardRef<HTMLDivElement, TranscriptSegmentProp
             {renderTimestamp()}
           </div>
         )}
-        
+
         <div className="flex w-full items-start gap-2">
           {timestampPosition === "left" && renderTimestamp()}
-          
+
           <div className="flex-1 space-y-1">
             {renderSpeaker()}
             {renderTextContent()}
           </div>
-          
+
           {timestampPosition === "right" && renderTimestamp()}
         </div>
       </Comp>
