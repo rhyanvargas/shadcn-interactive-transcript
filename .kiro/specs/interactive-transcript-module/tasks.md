@@ -6,7 +6,7 @@
   - Set up basic project structure following shadcn/ui patterns
   - _Requirements: 1.3, 6.1, 6.2_
 
-- [ ] 2. Implement WebVTT parsing and transformation utilities
+- [x] 2. Implement WebVTT parsing and transformation utilities
   - [x] 2.1 Create WebVTT parser utility
     - Write functions to parse WebVTT format strings into structured transcript data
     - Implement error handling for malformed WebVTT content
@@ -25,34 +25,34 @@
     - Create unit tests for media integration functionality
     - _Requirements: 8.2, 8.3_
 
-- [ ] 3. Build core transcript segment component
+- [x] 3. Build core transcript segment component
   - [x] 3.1 Implement TranscriptSegment component
     - Create segment component with proper TypeScript props and forwardRef pattern
     - Implement class-variance-authority variants for different states (active, highlighted)
     - Add proper ARIA attributes and keyboard navigation support
     - _Requirements: 2.1, 2.4, 3.1, 3.3, 5.1, 5.2_
 
-  - [ ] 3.2 Add segment interaction handling
+  - [x] 3.2 Add segment interaction handling
     - Implement click handlers with timestamp callback functionality
     - Add hover and focus states with proper visual feedback
     - Create unit tests for segment interaction behavior
     - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4. Create transcript search functionality
-  - [ ] 4.1 Implement TranscriptSearch component
+- [x] 4. Create transcript search functionality
+  - [x] 4.1 Implement TranscriptSearch component
     - Build search input component using shadcn/ui Input component
     - Implement search logic with text highlighting and result navigation
     - Add keyboard shortcuts for search navigation (Enter, Escape, arrows)
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 4.2 Add search result highlighting
+  - [x] 4.2 Add search result highlighting
     - Implement text highlighting for search matches within transcript segments
     - Create navigation between search results with visual indicators
     - Add debounced search input handling for performance
     - _Requirements: 4.2, 4.3, 7.2_
 
-- [ ] 5. Build main InteractiveTranscript component
-  - [ ] 5.1 Create main component structure
+- [-] 5. Build main InteractiveTranscript component
+  - [x] 5.1 Create main component structure
     - Implement main component with forwardRef, asChild support, and variant props
     - Set up component composition using shadcn/ui patterns and Slot component
     - Add proper TypeScript definitions with VariantProps integration
