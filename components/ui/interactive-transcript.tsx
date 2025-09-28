@@ -12,13 +12,17 @@ import { TranscriptSegment } from "./transcript-segment"
 import { TranscriptSearch } from "./transcript-search"
 import { useTranscriptSearch } from "@/lib/hooks/use-transcript-search"
 import { useSegmentInteraction } from "@/lib/hooks/use-segment-interaction"
+import { parseWebVTT, validateWebVTT } from "@/lib/webvtt/parser"
+import { textToTranscriptData, validateTransformOptions } from "@/lib/webvtt/transformer"
 import {
   type TranscriptCue,
   type TranscriptData,
   type TranscriptConfig,
   type CueClickHandler,
   type TimeUpdateHandler,
-  type SearchHandler
+  type SearchHandler,
+  type TextTransformOptions,
+  WebVTTParseError
 } from "@/lib/types/transcript"
 
 /**
@@ -81,8 +85,10 @@ const transcriptContainerVariants = cva(
 export interface InteractiveTranscriptProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSearch'>,
   VariantProps<typeof interactiveTranscriptVariants> {
-  /** Transcript data - can be TranscriptData object or array of cues */
-  data: TranscriptData | TranscriptCue[]
+  /** Transcript data - can be WebVTT string, TranscriptData object, or array of cues */
+  data: string | TranscriptData | TranscriptCue[]
+  /** Options for text-to-transcript transformation (when data is plain text) */
+  textTransformOptions?: TextTransformOptions
   /** Currently active cue ID */
   activeCueId?: string
   /** Whether search functionality is enabled */
@@ -119,6 +125,12 @@ export interface InteractiveTranscriptProps
   onSearchClear?: () => void
   /** Component configuration */
   config?: Partial<TranscriptConfig>
+  /** Error handler for data parsing/validation errors */
+  onError?: (error: Error) => void
+  /** Warning handler for non-critical issues */
+  onWarning?: (warnings: string[]) => void
+  /** Loading state handler */
+  onLoadingChange?: (isLoading: boolean) => void
   /** Render as child component */
   asChild?: boolean
   /** Custom CSS class for transcript container */
@@ -151,13 +163,91 @@ const defaultTimestampFormatter = (time: number): string => {
 const defaultSpeakerFormatter = (speaker: string): string => `${speaker}:`
 
 /**
- * Normalize transcript data to cues array
+ * Normalize transcript data to cues array with comprehensive error handling
  */
-const normalizeTranscriptData = (data: TranscriptData | TranscriptCue[]): TranscriptCue[] => {
-  if (Array.isArray(data)) {
-    return data
+const normalizeTranscriptData = (
+  data: string | TranscriptData | TranscriptCue[],
+  textTransformOptions?: TextTransformOptions,
+  onError?: (error: Error) => void,
+  onWarning?: (warnings: string[]) => void
+): TranscriptCue[] => {
+  try {
+    // Handle string input (WebVTT or plain text)
+    if (typeof data === 'string') {
+      const trimmedData = data.trim()
+
+      if (!trimmedData) {
+        throw new Error('Transcript data cannot be empty')
+      }
+
+      // Check if it's WebVTT format
+      if (trimmedData.startsWith('WEBVTT')) {
+        // Validate WebVTT format first
+        const validation = validateWebVTT(trimmedData)
+        if (!validation.isValid) {
+          throw new WebVTTParseError(`Invalid WebVTT format: ${validation.errors.join(', ')}`)
+        }
+
+        // Parse WebVTT
+        const parseResult = parseWebVTT(trimmedData)
+
+        // Handle warnings
+        if (parseResult.warnings && onWarning) {
+          onWarning(parseResult.warnings)
+        }
+
+        return parseResult.data.cues
+      } else {
+        // Treat as plain text and transform to transcript data
+        if (textTransformOptions) {
+          const validation = validateTransformOptions(textTransformOptions)
+          if (!validation.isValid) {
+            throw new Error(`Invalid transform options: ${validation.errors.join(', ')}`)
+          }
+        }
+
+        const transcriptData = textToTranscriptData(trimmedData, textTransformOptions)
+        return transcriptData.cues
+      }
+    }
+
+    // Handle TranscriptData object
+    if (data && typeof data === 'object' && 'cues' in data) {
+      if (!Array.isArray(data.cues)) {
+        throw new Error('TranscriptData.cues must be an array')
+      }
+      return data.cues
+    }
+
+    // Handle array of cues
+    if (Array.isArray(data)) {
+      // Validate cue structure
+      for (let i = 0; i < data.length; i++) {
+        const cue = data[i]
+        if (!cue || typeof cue !== 'object') {
+          throw new Error(`Invalid cue at index ${i}: must be an object`)
+        }
+        if (typeof cue.startTime !== 'number' || typeof cue.endTime !== 'number') {
+          throw new Error(`Invalid cue at index ${i}: startTime and endTime must be numbers`)
+        }
+        if (cue.startTime >= cue.endTime) {
+          throw new Error(`Invalid cue at index ${i}: startTime must be less than endTime`)
+        }
+        if (typeof cue.text !== 'string') {
+          throw new Error(`Invalid cue at index ${i}: text must be a string`)
+        }
+      }
+      return data
+    }
+
+    throw new Error('Invalid data format: must be WebVTT string, TranscriptData object, or TranscriptCue array')
+  } catch (error) {
+    if (onError) {
+      onError(error instanceof Error ? error : new Error('Unknown error during data normalization'))
+    }
+    // Return empty array as fallback
+    return []
   }
-  return data.cues || []
 }
 
 /**
@@ -169,6 +259,7 @@ const InteractiveTranscript = React.forwardRef<HTMLDivElement, InteractiveTransc
     containerClassName,
     searchClassName,
     data,
+    textTransformOptions,
     activeCueId,
     searchable = true,
     searchPlaceholder = "Search transcript...",
@@ -186,6 +277,9 @@ const InteractiveTranscript = React.forwardRef<HTMLDivElement, InteractiveTransc
     onSearch,
     onSearchQueryChange,
     onSearchClear,
+    onError,
+    onWarning,
+    onLoadingChange,
     config = {},
     size,
     variant,
@@ -196,8 +290,34 @@ const InteractiveTranscript = React.forwardRef<HTMLDivElement, InteractiveTransc
     // Merge configuration
     const mergedConfig = React.useMemo(() => ({ ...DEFAULT_CONFIG, ...config }), [config])
 
-    // Normalize data to cues array
-    const cues = React.useMemo(() => normalizeTranscriptData(data), [data])
+    // Loading and error state
+    const [isLoading, setIsLoading] = React.useState(false)
+    const [dataError, setDataError] = React.useState<string | null>(null)
+
+    // Normalize data to cues array with error handling
+    const cues = React.useMemo(() => {
+      setIsLoading(true)
+      setDataError(null)
+
+      const handleError = (error: Error) => {
+        setDataError(error.message)
+        onError?.(error)
+      }
+
+      const handleWarning = (warnings: string[]) => {
+        onWarning?.(warnings)
+      }
+
+      const result = normalizeTranscriptData(data, textTransformOptions, handleError, handleWarning)
+
+      setIsLoading(false)
+      return result
+    }, [data, textTransformOptions, onError, onWarning])
+
+    // Notify loading state changes
+    React.useEffect(() => {
+      onLoadingChange?.(isLoading)
+    }, [isLoading, onLoadingChange])
 
     // Search functionality
     const searchEnabled = searchable && mergedConfig.searchable
@@ -295,6 +415,31 @@ const InteractiveTranscript = React.forwardRef<HTMLDivElement, InteractiveTransc
           </div>
         )}
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-8 text-muted-foreground">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2"></div>
+              <p className="text-sm">Loading transcript...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {dataError && !isLoading && (
+          <div className="flex items-center justify-center py-8 text-destructive">
+            <div className="text-center max-w-md">
+              <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4">
+                <h3 className="font-medium mb-2">Error Loading Transcript</h3>
+                <p className="text-sm">{dataError}</p>
+                <p className="text-xs mt-2 text-muted-foreground">
+                  Please check your data format and try again.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Transcript Container */}
         <div
           className={cn(
@@ -342,7 +487,7 @@ const InteractiveTranscript = React.forwardRef<HTMLDivElement, InteractiveTransc
             })}
 
             {/* Empty state */}
-            {cues.length === 0 && (
+            {cues.length === 0 && !isLoading && !dataError && (
               <div className="flex items-center justify-center py-8 text-muted-foreground">
                 <div className="text-center">
                   <p className="text-sm">No transcript content available</p>

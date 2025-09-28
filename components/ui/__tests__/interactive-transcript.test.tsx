@@ -457,3 +457,98 @@ describe("InteractiveTranscript", () => {
     })
   })
 })
+desc
+ribe("WebVTT Integration", () => {
+  const mockWebVTT = `WEBVTT
+
+00:00.000 --> 00:05.000
+<v Speaker 1>Hello world, this is a test transcript
+
+00:05.000 --> 00:10.000
+<v Speaker 2>This is another segment with different content`
+
+  const mockPlainText = `Speaker 1: Hello world, this is a test transcript.
+Speaker 2: This is another segment with different content.`
+
+  it("parses WebVTT string data", () => {
+    render(<InteractiveTranscript data={mockWebVTT} />)
+
+    expect(screen.getByRole("log", { name: "Transcript content" })).toBeInTheDocument()
+    expect(screen.getAllByRole("button")).toHaveLength(2)
+  })
+
+  it("transforms plain text data", () => {
+    render(
+      <InteractiveTranscript
+        data={mockPlainText}
+        textTransformOptions={{
+          segmentDuration: 3,
+          speakerDetection: true,
+          timestampFormat: 'timecode'
+        }}
+      />
+    )
+
+    expect(screen.getByRole("log", { name: "Transcript content" })).toBeInTheDocument()
+    expect(screen.getAllByRole("button")).toHaveLength(2)
+  })
+
+  it("shows loading state during data processing", () => {
+    const onLoadingChange = vi.fn()
+    render(
+      <InteractiveTranscript
+        data={mockWebVTT}
+        onLoadingChange={onLoadingChange}
+      />
+    )
+
+    // Loading should be called at least once
+    expect(onLoadingChange).toHaveBeenCalled()
+  })
+
+  it("handles WebVTT parsing errors", () => {
+    const onError = vi.fn()
+    const invalidWebVTT = "INVALID WEBVTT FORMAT"
+
+    render(
+      <InteractiveTranscript
+        data={invalidWebVTT}
+        onError={onError}
+      />
+    )
+
+    expect(onError).toHaveBeenCalled()
+    expect(screen.getByText("Error Loading Transcript")).toBeInTheDocument()
+  })
+
+  it("handles empty string data", () => {
+    const onError = vi.fn()
+
+    render(
+      <InteractiveTranscript
+        data=""
+        onError={onError}
+      />
+    )
+
+    expect(onError).toHaveBeenCalled()
+    expect(screen.getByText("Error Loading Transcript")).toBeInTheDocument()
+  })
+
+  it("validates transform options", () => {
+    const onError = vi.fn()
+
+    render(
+      <InteractiveTranscript
+        data={mockPlainText}
+        textTransformOptions={{
+          segmentDuration: -1, // Invalid duration
+          speakerDetection: true
+        }}
+        onError={onError}
+      />
+    )
+
+    expect(onError).toHaveBeenCalled()
+  })
+})
