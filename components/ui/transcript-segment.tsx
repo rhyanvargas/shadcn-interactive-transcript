@@ -9,6 +9,7 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { type TranscriptCue } from "@/lib/types/transcript"
+import { highlightSearchMatches } from "@/lib/utils/search-highlighting"
 
 /**
  * Component variants using class-variance-authority
@@ -167,36 +168,7 @@ const defaultTimestampFormatter = (time: number): string => {
  */
 const defaultSpeakerFormatter = (speaker: string): string => `${speaker}:`
 
-/**
- * Highlight search matches in text
- */
-const highlightSearchMatches = (text: string, query: string): React.ReactNode => {
-  if (!query.trim()) return text
 
-  const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi')
-  const parts = text.split(regex)
-
-  return parts.map((part, index) => {
-    if (regex.test(part)) {
-      return (
-        <mark
-          key={index}
-          className="bg-yellow-200 dark:bg-yellow-800 text-foreground rounded px-0.5"
-        >
-          {part}
-        </mark>
-      )
-    }
-    return part
-  })
-}
-
-/**
- * Escape special regex characters
- */
-const escapeRegExp = (string: string): string => {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
 
 /**
  * TranscriptSegment component
